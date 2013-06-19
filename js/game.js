@@ -1,3 +1,27 @@
+/*
+ * game.js
+ * 
+ * Copyright 2013 Ambergleam <ambergleam@gmail.com>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ * 
+ * 
+ */
+var textTitle = "Cloud Runner", textAuthor = "Ambergleam";
+
 var width = window.innerWidth;		// Canvas width
 var height = window.innerHeight;	// Canvas height
 var background = "#d0e7f9"; // Background color
@@ -5,6 +29,15 @@ var background = "#d0e7f9"; // Background color
 var gLoop;								// Game loop
 var c = document.getElementById('c');	// Canvas itself
 var ctx = c.getContext('2d'); 			// Two-dimensional graphic context of canvas
+
+// Score in the game
+var score = 0;
+
+// Unique collisions in the game
+var collisions = 0;
+
+// Game state - true is on, false is off
+var state = true;
 
 // Set canvas size
 c.width = width;
@@ -21,8 +54,75 @@ var clear = function(){
 	ctx.fill();						// Fill rectangle with active color selected before
 }
 
+// The background fog
+var fogDensity = 10;
+var fogs = [];
+for (var i = 0; i < fogDensity; i++){
+	
+		/*
+		 * Create new object based on function and assign what it returns to the 'fog' variable
+		 */
+		var fog = new (function(){
+			var that = this;	// 'that' will be the context now
+			
+			// Variables
+			that.radius = (Math.random() * 320) + 160;
+			that.transparency = (Math.random() / 4) + .1;
+			that.xspeed = Math.random()*1;
+			that.yspeed = Math.random()*1;
+			that.xpos = Math.random() * width;
+			that.ypos = Math.random() * height;
+			
+			// Color
+			that.fillStyle = "rgba(255, 255, 255, " + that.transparency + ")";
+			
+			/*
+			 * Sets position
+			 */
+			that.setPosition = function(x, y){
+				that.xpos = x;
+				that.ypos = y;
+			}
+			
+			/*
+			 * Draws the circles on the canvas
+			 */
+			that.draw = function(){
+				// Draw main body of fog
+				ctx.fillStyle = that.fillStyle;	// RGBA color with transparency
+				ctx.beginPath();
+				ctx.arc(that.xpos, that.ypos, that.radius, 0, Math.PI*2, true); // arc(x, y, radius, startAngle, endAngle, anticlockwise)
+				ctx.fill();
+				ctx.closePath();
+			}
+			
+			/*
+			 * Moves the fog
+			 */
+			that.move = function(deltaX, deltaY){
+				that.setPosition(that.xpos + deltaX, that.ypos + deltaY);
+			}
+			
+			/*
+			 * Updates the fog
+			 */
+			that.update = function(){
+				if (that.xpos - that.radius > width) {
+					that.xpos = -1 * that.radius;
+				}
+				if (that.ypos - that.radius > height) {
+					that.ypos = -1 * that.radius;
+				}
+				that.move(that.xspeed, that.yspeed);
+			}
+			
+		})(); // End fog object assignment
+		
+	fogs.push(fog);
+}
+
 // The number of clouds
-var cloudNumber = 80;
+var cloudNumber = 20;
 var clouds = [];
 for (var i = 0; i < cloudNumber; i++){
 	
@@ -33,10 +133,23 @@ for (var i = 0; i < cloudNumber; i++){
 			var that = this;	// 'that' will be the context now
 			
 			// Variables
-			that.radius = (Math.random() * 40) + 40;
+			that.radius = (Math.random() * 40) + 60;
 			that.transparency = (Math.random() / 4) + .4;
-			that.xspeed = Math.random() * 5;
-			that.yspeed = Math.random() * 5;
+			
+			// Randomize starting speed and direction
+			that.xspeed = Math.random() * 1 + 2;
+			that.yspeed = Math.random() * 1 + 2;
+			var xtemp = Math.random();
+			if (xtemp > .5) {
+				that.xspeed *= -1;
+			}
+			var ytemp = Math.random();
+			if (ytemp > .5) {
+				that.yspeed *= -1;
+			}
+			
+			// Fresh cloud, unharmed
+			that.collided = false;
 			
 			// Fix spawn location of clouds
 			do {
@@ -83,7 +196,6 @@ for (var i = 0; i < cloudNumber; i++){
 				ctx.closePath();
 				
 				// Draw cloud outline
-				ctx.fillStyle = "rgba(255, 255, 255, " + 0.9 + ")";
 				ctx.beginPath();
 				ctx.arc(that.xpos, that.ypos, that.radius, 0, Math.PI*2, true);
 				ctx.stroke();
@@ -113,9 +225,15 @@ for (var i = 0; i < cloudNumber; i++){
 			/*
 			 * Collision consequences
 			 */
-			that.onCollide = function(){
-				// Change color on collision
-				that.fillStyle = "rgba(0, 0, 0, " + that.transparency + ")";
+			that.onCollidePlayer = function(){
+				if (that.collided == false) {
+					// Change color on collision
+					that.fillStyle = "rgba(0, 0, 0, " + that.transparency + ")";
+					// Add one to the unique collisions tally
+					collisions++;
+					// Set collided to be true as the cloud is harmed
+					that.collided = true;
+				}
 			}
 			
 		})(); // End cloud object assignment
@@ -254,9 +372,22 @@ var checkCollision = function(){
 		var py = (player.ypos + ~~(player.height/2));
 		var distance =  Math.sqrt( Math.pow((px-cloud.xpos),2) + Math.pow((py-cloud.ypos),2) );
 		if (distance <= cloud.radius) {
-			cloud.onCollide();
+			cloud.onCollidePlayer();
 		}
 	});
+}
+
+/*
+ * Updates the game state based on events
+ */
+var updateGameState = function(){
+	if (collisions >= 3) {
+		// Game ends
+		GameOver();
+	} else {
+		// Game continues and score increases
+		score++;
+	}
 }
 
 /*
@@ -264,6 +395,12 @@ var checkCollision = function(){
  */
 var GameLoop = function(){
 	clear();
+	
+	// Update background fog
+	fogs.forEach(function(fog){
+		fog.update();
+		fog.draw();
+	});
 	
 	// Move and draw clouds
 	clouds.forEach(function(cloud){
@@ -278,9 +415,40 @@ var GameLoop = function(){
 	// Collision detection
 	checkCollision();
 	
+	// Update game state
+	updateGameState();
+	
+	ctx.fillStyle = "Black";						// Change active color to black
+	ctx.font = "10pt Arial";						// Font settings
+	
+	ctx.fillText("Score: " + score, 10, height-30); 							// Add text in the bottom-left corner of the canvas
+	ctx.fillText("Collisions Remaining: " + (3-collisions), 10, height-10); 	// Add text in the bottom-left corner of the canvas
+	
+	ctx.fillText(textTitle, 10, 15); 	// Add text in the top-right
+	ctx.fillText(textAuthor, 10, 35); 	// Add text in the top-right
+	
 	// Timer loop
-	gLoop = setTimeout(GameLoop, 1000 / 50);
+	if (state == true) {
+		gLoop = setTimeout(GameLoop, 1000 / 100);
+	}
 }
+
+// Game over screen
+var GameOver = function(){
+    state = false;			// Set state to false
+    clearTimeout(gLoop);	// Stop calling another frame
+    /*
+     * Wait for already called frames to be drawn and then clear everything and render text
+     */
+    setTimeout(function(){
+        clear(); 
+        ctx.fillStyle = "Black";
+        ctx.font = "10pt Arial";
+        ctx.fillText("GAME OVER", width / 2 - 60, height / 2 - 50);
+        ctx.fillText("Final Score:", width / 2 - 60, height / 2 - 30);
+        ctx.fillText(score, width / 2 - 60, height / 2 - 10);
+    }, 100);
+};
 
 // Run the game
 GameLoop();
