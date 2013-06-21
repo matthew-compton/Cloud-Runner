@@ -39,13 +39,21 @@ c.height = height;
 
 // Game state
 var STATE = {
-  TITLE : {value: 0, name: "Title", code: "T"}, 
-  GAMESTART: {value: 1, name: "Game Start", code: "S"},
-  GAMEPLAY: {value: 2, name: "Game Play", code: "G"}, 
-  GAMEPAUSE : {value: 3, name: "Game Pause", code: "P"},
-  GAMEOVER : {value: 4, name: "Game Over", code: "O"}
+  TITLE : 		{value: 0, name: "Title"}, 
+  GAMESTART: 	{value: 1, name: "Game Start"},
+  GAMEPLAY: 	{value: 2, name: "Game Play"}, 
+  GAMEPAUSE : 	{value: 3, name: "Game Pause"},
+  GAMEOVER : 	{value: 4, name: "Game Over"}
 };
 var GAMESTATE = STATE.TITLE;	 // Where the game starts 
+
+// Game difficulty
+var CHALLENGE = {
+  EASY : 	{value: 0, name: "Easy", 	modifier: 1}, 
+  MEDIUM: 	{value: 1, name: "Medium", 	modifier: 2},
+  HARD: 	{value: 2, name: "Hard", 	modifier: 4}
+};
+var difficulty = CHALLENGE.EASY;	 // Starting difficulty 
 
 /*
  * Clear the canvas with the chosen color
@@ -271,7 +279,7 @@ var player = new (function(){
     
     // Create new Image and set it's source to the image I upload above
     that.image = new Image();
-    that.image.src = "images/cloudly-sprites.png";
+    that.image.src = "images/cloudly-sprites-outlined.png";
 
 	// Attributes of a single frame
     that.width = 20;
@@ -374,6 +382,9 @@ var Key = {
 	DOWN_ALT:	83,
 	ENTER:		13,
 	SPACE:		32,
+	NUM_1:		49,
+	NUM_2:		50,
+	NUM_3:		51,
 	isDown: function(keyCode) {
 		return this._pressed[keyCode];
 	},
@@ -440,7 +451,7 @@ var CheckStatus = function(){
 			GAMESTATE = STATE.GAMEOVER;
 		} else {
 			// Game continues and score increases
-			score++;
+			score += difficulty.modifier;
 		}
 	} else if (GAMESTATE == STATE.GAMEPAUSE) {
 		// GAMEPAUSE
@@ -459,6 +470,15 @@ var Command = function(){
 		if (Key.isPressed(Key.ENTER)) {
 			GAMESTATE = STATE.GAMESTART;
 		}
+		if (Key.isPressed(Key.NUM_1)) {
+			difficulty = CHALLENGE.EASY;
+		}
+		if (Key.isPressed(Key.NUM_2)) {
+			difficulty = CHALLENGE.MEDIUM;
+		}
+		if (Key.isPressed(Key.NUM_3)) {
+			difficulty = CHALLENGE.HARD;
+		}
 	} else if (GAMESTATE == STATE.GAMESTART) {
 		// GAMESTART
 	} else if (GAMESTATE == STATE.GAMEPLAY) {
@@ -472,6 +492,10 @@ var Command = function(){
 		// Un-Pause game during gameplay
 		if (Key.isPressed(Key.SPACE)) {
 			GAMESTATE = STATE.GAMEPLAY;
+		}
+		// Exit current game
+		if (Key.isPressed(Key.ENTER)) {
+			GAMESTATE = STATE.TITLE;
 		}
 	} else if (GAMESTATE == STATE.GAMEOVER) {
 		// GAMEOVER
@@ -520,61 +544,90 @@ var StateTitle = function(){
  * Start of game
  */
 var StateGameStart = function(){
-
-	// Setup variables for beginning of the game
+	// Change starting variables depending on the difficulty
+	if (difficulty == CHALLENGE.HARD) {
+		// Hard mode
+		startGameHard();
+	} else if (difficulty == CHALLENGE.MEDIUM) {
+		// Medium mode
+		startGameMedium();
+	} else {
+		// Easy Mode
+		startGameEasy();
+	}
+	// Setup game variables
 	score = 0;
-	maxLives = 3;
-	currentLives = maxLives;
 	collisions = 0;
-	
+	currentLives = maxLives;
 	// Background fog
 	fogDensity = 10;
 	fogs = [];
 	setFog();
-	
 	// Clouds
-	cloudNumber = 20;
 	clouds = [];
 	setClouds();
-
 	// Setup player
 	resetPlayer();
-
 	// After setup, send to gameplay
 	GAMESTATE = STATE.GAMEPLAY;
-	
 	gLoop = setTimeout(GameLoop, 1000 / 100);
+}
+
+/*
+ * Setup an hard game
+ */
+var startGameHard = function(){
+	maxLives = 1;
+	cloudNumber = 40;
+}
+
+/*
+ * Setup an medium game
+ */
+var startGameMedium = function(){
+	maxLives = 3;
+	cloudNumber = 20;
+}
+
+/*
+ * Setup an easy game
+ */
+var startGameEasy = function(){
+	maxLives = 5;
+	cloudNumber = 10;
 }
 
 /*
  * Game being played
  */
 var StateGamePlay = function(){
-	
+	// Updates the game state
+	updateGamePlay();
+	// Collision detection
+	checkCollision();
+	// GUI
+	StateGamePlayGUI();
+	// Game is playing
+	gLoop = setTimeout(GameLoop, 1000 / 100);
+}
+
+/*
+ * Update game play
+ */
+var updateGamePlay = function(){
 	// Update background fog
 	fogs.forEach(function(fog){
 		fog.update();
 		fog.draw();
 	});
-	
 	// Move and draw clouds
 	clouds.forEach(function(cloud){
 		cloud.update();
 		cloud.draw();
 	});
-	
 	// Move and draw player
 	player.update();
 	player.draw();
-	
-	// Collision detection
-	checkCollision();
-	
-	// GUI
-	StateGamePlayGUI();
-	
-	// Game is playing
-	gLoop = setTimeout(GameLoop, 1000 / 100);
 }
 
 /*
@@ -602,11 +655,10 @@ var StateGameOver = function(){
 var StateTitleGUI = function(){
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText(textTitle+":", width / 2 - 60, height / 2 - 50);
-	ctx.fillText("- Arrows to move", width / 2 - 60, height / 2 - 30);
-	ctx.fillText("- 'SPACE' to Pause", width / 2 - 60, height / 2 - 10);
-	ctx.fillText("- 'ENTER' to Start", width / 2 - 60, height / 2 + 10);
-	GUI_Score();
+	ctx.fillText("- 1,2,3 for Easy, Medium, Hard", width / 2 - 60, height / 2 + 30);
+	ctx.fillText("- Difficulty: " + difficulty.name, width / 2 - 60, height / 2 + 50);
+	ctx.fillText("ENTER to Start", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
+	GUI_HighScore();
 	GUI_Mark();
 }
 
@@ -621,8 +673,11 @@ var StateGameOverGUI = function(){
  * STATE GAMEPLAY GUI
  */
 var StateGamePlayGUI = function(){
+	ctx.fillStyle = "Black";
+	ctx.font = "10pt Arial";
+	ctx.fillText("SPACE to Pause", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
 	GUI_Lives();
-	GUI_Score();
+	GUI_Stats();
 	GUI_Mark();
 }
 
@@ -630,12 +685,36 @@ var StateGamePlayGUI = function(){
  * STATE GAMEPAUSE GUI
  */
 var StateGamePauseGUI = function(){
+	// Draw the paused game world
+	drawGamePause();
+	// Overtext for pausing
+	ctx.fillStyle = "Black";
+	ctx.font = "20pt Arial";
+	ctx.fillText("PAUSED", width / 2 - 60, height / 2 - 50);
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText("PAUSED", width / 2 - 60, height / 2 - 50);
+	ctx.fillText("SPACE to Unpause", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("ENTER to Main Menu", width-150, height-35); 	// Add text in the bottom-right corner of the canvas
+	// Other GUI features
 	GUI_Lives();
-	GUI_Score();
+	GUI_Stats();
 	GUI_Mark();
+}
+
+/*
+ * Draw game during pause
+ */
+var drawGamePause = function(){
+	// Update background fog
+	fogs.forEach(function(fog){
+		fog.draw();
+	});
+	// Move and draw clouds
+	clouds.forEach(function(cloud){
+		cloud.draw();
+	});
+	// Move and draw player
+	player.draw();
 }
 
 /*
@@ -647,9 +726,9 @@ var StateGameOverGUI = function(){
 	ctx.fillText("GAME OVER", width / 2 - 60, height / 2 - 50);
 	ctx.fillText("Final Score:", width / 2 - 60, height / 2 - 30);
 	ctx.fillText(score, width / 2 - 60, height / 2 - 10);
-	ctx.fillText("SPACE to Restart", width-100, 15); 	// Add text in the top-right corner of the canvas
-	ctx.fillText("ENTER to Main Menu", width-100, 35); 	// Add text in the top-right corner of the canvas
-	GUI_Score();
+	ctx.fillText("SPACE to Restart", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("ENTER to Main Menu", width-150, height-35); 	// Add text in the bottom-right corner of the canvas
+	GUI_Stats();
 	GUI_Mark();
 }
 
@@ -658,9 +737,19 @@ var StateGameOverGUI = function(){
  */
 var GUI_Lives = function(){
 	var image = new Image();
-    image.src = "images/cloudly.png";
-	for (var i = 0; i < currentLives; i++) {
-		ctx.drawImage(image, marginLeft + marginText*i, height / 2);
+    image.src = "images/heart-sprites.png";
+	for (var i = 0; i < maxLives; i++) {
+		try {
+			var dim = 11;	// Dimensions of the image
+			// drawImage(Image Object, source X, source Y, source Width, source Height, destination X (X position), destination Y (Y position), Destination width, Destination height)
+			if (i < currentLives) {
+				ctx.drawImage(image, 0, dim * 0, dim, dim, width - (i+1)*marginText, 5, dim, dim);
+			} else {
+				ctx.drawImage(image, 0, dim * 1, dim, dim, width - (i+1)*marginText, 5, dim, dim);
+			}
+        } catch (e) {
+			// If image is too big and will not load until the drawing of the first frame, Javascript will throw error and stop executing everything.
+        }
 	}
 }
 
@@ -675,12 +764,22 @@ var GUI_Mark = function(){
 }
 
 /*
- * GUI - Place high score in bottom-left
+ * GUI - Places both scores in bottom-left
  */
-var GUI_Score = function(){
+var GUI_Stats = function(){
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
+	ctx.fillText(difficulty.name, marginLeft, height-50); 	// Add text in the bottom-left corner of the canvas
 	ctx.fillText("Score: " + score, marginLeft, height-30); 	// Add text in the bottom-left corner of the canvas
+	ctx.fillText("Record: " + highscore, marginLeft, height-10); // Add text in the bottom-left corner of the canvas
+}
+
+/*
+ * GUI - Place high score in bottom-left
+ */
+var GUI_HighScore = function(){
+	ctx.fillStyle = "Black";
+	ctx.font = "10pt Arial";
 	ctx.fillText("Record: " + highscore, marginLeft, height-10); // Add text in the bottom-left corner of the canvas
 }
 
