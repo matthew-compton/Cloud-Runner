@@ -20,12 +20,13 @@
  * 
  * 
  */
-var textTitle = "Cloud Runner", textAuthor = "Ambergleam";
+var textTitle = "Cloud Runner";
 
 var width = window.innerWidth;		// Canvas width
 var height = window.innerHeight;	// Canvas height
 var marginLeft = 10;				// Leave space between text and left of canvas
 var marginTop = 15;					// Leave space between text and top of canvas
+var marginBottom = 10;				// Leave space between text and bottom of canvas
 var marginText = 20;				// Leave space between two text blocks
 var background = "#d0e7f9"; // Background color
 
@@ -49,11 +50,13 @@ var GAMESTATE = STATE.TITLE;	 // Where the game starts
 
 // Game difficulty
 var CHALLENGE = {
-  EASY : 	{value: 0, name: "Easy", 	modifier: 1}, 
-  MEDIUM: 	{value: 1, name: "Medium", 	modifier: 2},
-  HARD: 	{value: 2, name: "Hard", 	modifier: 4}
+	VERYEASY : 	{lives: 5, clouds: 10, name: "Very Easy", 	modifier: 1		}, 
+	EASY : 		{lives: 4, clouds: 20, name: "Easy", 		modifier: 2		}, 
+	MEDIUM: 	{lives: 3, clouds: 30, name: "Medium", 		modifier: 4		},
+	HARD: 		{lives: 2, clouds: 40, name: "Hard", 		modifier: 8	},
+	VERYHARD: 	{lives: 1, clouds: 50, name: "Very Hard", 	modifier: 16	}
 };
-var difficulty = CHALLENGE.EASY;	 // Starting difficulty 
+var difficulty = CHALLENGE.MEDIUM;	 // Starting difficulty 
 
 /*
  * Clear the canvas with the chosen color
@@ -195,10 +198,10 @@ var setClouds = function() {
 					
 					// Check every cloud's distance to the center
 					var px = ~~(width/2);
-					var py = ~~(height/2);
+					var py = ~~(marginTop);
 					var distance =  Math.sqrt( Math.pow((px-that.xpos),2) + Math.pow((py-that.ypos),2) );
 					
-					var acceptableDistance = 100;
+					var acceptableDistance = 200;
 				} while (distance <= acceptableDistance);
 				
 				// Color
@@ -295,7 +298,7 @@ var player = new (function(){
 	// Start from which frame
 	that.actualFrame = 0;
 	
-	// No need to switch animation frame on each game loop,instead at each switching interval
+	// No need to switch animation frame on each game loop, instead at each switching interval
 	that.interval = 0;
 	
 	// Sets position
@@ -363,9 +366,113 @@ var player = new (function(){
  * '~~' returns nearest lower integer from given float, equivalent of Math.floor()
  */
 var resetPlayer = function() {
-	player.setPosition(~~((width-player.width)/2),  ~~((height - player.height)/2));
+	player.setPosition(~~((width-player.width)/2),  ~~((marginTop)));
 }
-resetPlayer();
+
+/*
+ * Create new object based on function and assign what it returns to the 'raincloud' variable
+ */
+var raincloud = new (function(){
+    var that = this;	// 'that' will be the context now
+    
+    // Create new Image and set it's source to the image I upload above
+    that.image = new Image();
+    that.image.src = "images/raincloud-sprites.png";
+
+	// Attributes of a single frame
+    that.width = 17;
+    that.height = 17;
+
+	// Position of image
+    that.xpos = 0;
+    that.ypos = 0;
+
+	// Number of frames indexed from zero
+	that.frames = 1;
+	
+	// Start from which frame
+	that.actualFrame = 0;
+	
+	// No need to switch animation frame on each game loop, instead at each switching interval
+	that.interval = 0;
+	
+	// Sets position
+    that.setPosition = function(x, y){
+		that.xpos = x;
+		that.ypos = y;
+	}
+	
+	// Movement
+	var movement = 3;	// Move increment or speed
+	that.moveLeft = function(){
+		if (that.xpos > 0) {
+			that.setPosition(that.xpos - movement, that.ypos);
+		}
+	}
+	that.moveRight = function(){
+		if (that.xpos + that.width < width) {
+			that.setPosition(that.xpos + movement, that.ypos);
+		}
+	}
+	that.moveUp = function(){
+		if (that.ypos > 0) {
+			that.setPosition(that.xpos, that.ypos - movement);
+		}
+	}
+	that.moveDown = function(){
+		if (that.ypos + that.height < height) {
+			that.setPosition(that.xpos, that.ypos + movement);
+		}
+	}
+	
+	// Draws the image
+    that.draw = function(){
+        try {
+			// Cutting source image and pasting it into destination one
+			// drawImage(Image Object, source X, source Y, source Width, source Height, destination X (X position), destination Y (Y position), Destination width, Destination height)
+            ctx.drawImage(that.image, 0, that.height * that.actualFrame, that.width, that.height, that.xpos, that.ypos, that.width, that.height);
+            // 3rd agument needs to be multiplied by number of frames, so on each loop different frame will be cut from the source image
+        } catch (e) {
+			// If image is too big and will not load until the drawing of the first frame, Javascript will throw error and stop executing everything.
+        }
+        // Switch frames at every interval
+		if ((that.actualFrame == that.frames && that.interval == 12) || (that.actualFrame != that.frames && that.interval == 200)) {
+			if (that.actualFrame == that.frames) {
+				that.actualFrame = 0;
+			} else {
+				that.actualFrame++;
+			}
+			that.interval = 0;
+		}
+		that.interval++;
+    }
+    
+    /*
+     * Raincloud moves towards the player
+     */
+    that.update = function() {
+		if (player.ypos < that.ypos) this.moveUp();
+		if (player.xpos < that.xpos) this.moveLeft();
+		if (player.ypos > that.ypos) this.moveDown();
+		if (player.xpos > that.xpos) this.moveRight();
+	};
+	
+	/*
+	 * Collision consequences
+	 */
+	that.onCollidePlayer = function(){
+		// Instant death
+		currentLives = 0;
+	}
+    
+})(); // End raincloud object assignment
+
+/*
+ * Place raincloud on bottom middle of screen
+ */
+var resetRaincloud = function() {
+	raincloud.setPosition(~~((width-raincloud.width)/2),  ~~((height - raincloud.height - 20)));
+}
 
 /*
  * Bind movement to keyboard
@@ -382,9 +489,6 @@ var Key = {
 	DOWN_ALT:	83,
 	ENTER:		13,
 	SPACE:		32,
-	NUM_1:		49,
-	NUM_2:		50,
-	NUM_3:		51,
 	isDown: function(keyCode) {
 		return this._pressed[keyCode];
 	},
@@ -424,6 +528,45 @@ var checkCollision = function(){
 			cloud.onCollidePlayer();
 		}
 	});
+	// Check raincloud's distance to the player's center
+	var px1 = (player.xpos + ~~(player.width/2));
+	var py1 = (player.ypos + ~~(player.height/2));
+	var px2 = (raincloud.xpos + ~~(raincloud.width/2));
+	var py2 = (raincloud.ypos + ~~(raincloud.height/2));
+	var distance =  Math.sqrt( Math.pow((px1-px2),2) + Math.pow((py1-py2),2) );
+	if (distance <= (~~(player.width/2) + ~~(raincloud.width/2))) {
+		raincloud.onCollidePlayer();
+	}
+}
+
+/*
+ * Lower the current difficulty
+ */
+var lowerDifficulty = function() {
+	if (difficulty == CHALLENGE.VERYHARD) {
+		difficulty = CHALLENGE.HARD;
+	} else if (difficulty == CHALLENGE.HARD) {
+		difficulty = CHALLENGE.MEDIUM;
+	} else if (difficulty == CHALLENGE.MEDIUM) {
+		difficulty = CHALLENGE.EASY;
+	} else if (difficulty == CHALLENGE.EASY) {
+		difficulty = CHALLENGE.VERYEASY;
+	}
+}
+
+/*
+ * Raise the current difficulty
+ */
+var raiseDifficulty = function() {
+	if (difficulty == CHALLENGE.VERYEASY) {
+		difficulty = CHALLENGE.EASY;
+	} else if (difficulty == CHALLENGE.EASY) {
+		difficulty = CHALLENGE.MEDIUM;
+	} else if (difficulty == CHALLENGE.MEDIUM) {
+		difficulty = CHALLENGE.HARD;
+	} else if (difficulty == CHALLENGE.HARD) {
+		difficulty = CHALLENGE.VERYHARD;
+	}
 }
 
 /*
@@ -467,17 +610,14 @@ var Command = function(){
 	if (GAMESTATE == STATE.TITLE) {
 		// TITLE
 		// Start game
-		if (Key.isPressed(Key.ENTER)) {
+		if (Key.isPressed(Key.ENTER) || Key.isPressed(Key.UP) || Key.isPressed(Key.UP_ALT)) {
 			GAMESTATE = STATE.GAMESTART;
 		}
-		if (Key.isPressed(Key.NUM_1)) {
-			difficulty = CHALLENGE.EASY;
+		if (Key.isPressed(Key.LEFT) || Key.isPressed(Key.LEFT_ALT)) {
+			lowerDifficulty();
 		}
-		if (Key.isPressed(Key.NUM_2)) {
-			difficulty = CHALLENGE.MEDIUM;
-		}
-		if (Key.isPressed(Key.NUM_3)) {
-			difficulty = CHALLENGE.HARD;
+		if (Key.isPressed(Key.RIGHT) || Key.isPressed(Key.RIGHT_ALT)) {
+			raiseDifficulty();
 		}
 	} else if (GAMESTATE == STATE.GAMESTART) {
 		// GAMESTART
@@ -536,8 +676,23 @@ var Transition = function(){
  * Title screen
  */
 var StateTitle = function(){
+	StateTitleBackground();
 	StateTitleGUI();
 	gLoop = setTimeout(GameLoop, 1000 / 100);
+}
+
+/*
+ * Title screen background
+ */
+fogDensity = 15;
+fogs = [];
+setFog();
+var StateTitleBackground = function(){
+	// Update background fog
+	fogs.forEach(function(fog){
+		fog.update();
+		fog.draw();
+	});
 }
 
 /*
@@ -545,16 +700,8 @@ var StateTitle = function(){
  */
 var StateGameStart = function(){
 	// Change starting variables depending on the difficulty
-	if (difficulty == CHALLENGE.HARD) {
-		// Hard mode
-		startGameHard();
-	} else if (difficulty == CHALLENGE.MEDIUM) {
-		// Medium mode
-		startGameMedium();
-	} else {
-		// Easy Mode
-		startGameEasy();
-	}
+	maxLives = difficulty.lives;
+	cloudNumber = difficulty.clouds;
 	// Setup game variables
 	score = 0;
 	collisions = 0;
@@ -566,35 +713,13 @@ var StateGameStart = function(){
 	// Clouds
 	clouds = [];
 	setClouds();
+	// Setup raincloud
+	resetRaincloud();
 	// Setup player
 	resetPlayer();
 	// After setup, send to gameplay
 	GAMESTATE = STATE.GAMEPLAY;
 	gLoop = setTimeout(GameLoop, 1000 / 100);
-}
-
-/*
- * Setup an hard game
- */
-var startGameHard = function(){
-	maxLives = 1;
-	cloudNumber = 40;
-}
-
-/*
- * Setup an medium game
- */
-var startGameMedium = function(){
-	maxLives = 3;
-	cloudNumber = 20;
-}
-
-/*
- * Setup an easy game
- */
-var startGameEasy = function(){
-	maxLives = 5;
-	cloudNumber = 10;
 }
 
 /*
@@ -625,6 +750,9 @@ var updateGamePlay = function(){
 		cloud.update();
 		cloud.draw();
 	});
+	// Move and draw raincloud
+	raincloud.update();
+	raincloud.draw();
 	// Move and draw player
 	player.update();
 	player.draw();
@@ -645,6 +773,10 @@ var StateGameOver = function(){
 	if (score > highscore) {
 		highscore = score;
 	}
+	// Update background fog
+	fogs.forEach(function(fog){
+		fog.draw();
+	});
 	StateGameOverGUI();
 	gLoop = setTimeout(GameLoop, 1000 / 100);
 }
@@ -654,10 +786,44 @@ var StateGameOver = function(){
  */
 var StateTitleGUI = function(){
 	ctx.fillStyle = "Black";
-	ctx.font = "10pt Arial";
-	ctx.fillText("- 1,2,3 for Easy, Medium, Hard", width / 2 - 60, height / 2 + 30);
-	ctx.fillText("- Difficulty: " + difficulty.name, width / 2 - 60, height / 2 + 50);
-	ctx.fillText("ENTER to Start", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
+	if (difficulty == CHALLENGE.VERYEASY) {
+		ctx.font = "Bold 10pt Arial";
+		ctx.fillText("Very Easy", 	width / 2 - 220,	height - marginBottom);
+		ctx.font = "10pt Arial";
+	} else {
+		ctx.fillText("Very Easy", 	width / 2 - 220,	height - marginBottom);
+	}
+	if (difficulty == CHALLENGE.EASY) {
+		ctx.font = "Bold 10pt Arial";
+		ctx.fillText("Easy",		width / 2 - 100, 	height - marginBottom);
+		ctx.font = "10pt Arial";
+	} else {
+		ctx.fillText("Easy",		width / 2 - 100, 	height - marginBottom);
+	}
+	if (difficulty == CHALLENGE.MEDIUM) {
+		ctx.font = "Bold 10pt Arial";
+		ctx.fillText("Medium",		width / 2 - 20,		height - marginBottom);
+		ctx.font = "10pt Arial";
+	} else {
+		ctx.fillText("Medium",		width / 2 - 20,		height - marginBottom);
+	}
+	if (difficulty == CHALLENGE.HARD) {
+		ctx.font = "Bold 10pt Arial";
+		ctx.fillText("Hard",		width / 2 + 70, 	height - marginBottom);
+		ctx.font = "10pt Arial";
+	} else {
+		ctx.fillText("Hard",		width / 2 + 70, 	height - marginBottom);
+	}
+	if (difficulty == CHALLENGE.VERYHARD) {
+		ctx.font = "Bold 10pt Arial";
+		ctx.fillText("Very Hard",	width / 2 + 160, 	height - marginBottom);
+		ctx.font = "10pt Arial";
+	} else {
+		ctx.fillText("Very Hard",	width / 2 + 160, 	height - marginBottom);
+	}
+	
+	ctx.fillText("Choose Difficulty", width-120, height-30); // Add text in the bottom-right corner of the canvas
+	ctx.fillText("ENTER to Start", width-120, height-marginBottom); 	// Add text in the bottom-right corner of the canvas
 	GUI_HighScore();
 	GUI_Mark();
 }
@@ -665,7 +831,7 @@ var StateTitleGUI = function(){
 /*
  * STATE GAMESTART GUI
  */
-var StateGameOverGUI = function(){
+var StateGameStartGUI = function(){
 	// None yet
 }
 
@@ -675,7 +841,7 @@ var StateGameOverGUI = function(){
 var StateGamePlayGUI = function(){
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText("SPACE to Pause", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("SPACE to Pause", width-150, height-marginBottom); 	// Add text in the bottom-right corner of the canvas
 	GUI_Lives();
 	GUI_Stats();
 	GUI_Mark();
@@ -690,11 +856,11 @@ var StateGamePauseGUI = function(){
 	// Overtext for pausing
 	ctx.fillStyle = "Black";
 	ctx.font = "20pt Arial";
-	ctx.fillText("PAUSED", width / 2 - 60, height / 2 - 50);
+	ctx.fillText("PAUSED", width / 2 - 60, height / 2 - 40);
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText("SPACE to Unpause", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
-	ctx.fillText("ENTER to Main Menu", width-150, height-35); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("SPACE to Unpause", width-150, height-marginBottom); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("ENTER to Main Menu", width-150, height-30); 	// Add text in the bottom-right corner of the canvas
 	// Other GUI features
 	GUI_Lives();
 	GUI_Stats();
@@ -713,6 +879,8 @@ var drawGamePause = function(){
 	clouds.forEach(function(cloud){
 		cloud.draw();
 	});
+	// Move and draw raincloud
+	raincloud.draw();
 	// Move and draw player
 	player.draw();
 }
@@ -722,12 +890,12 @@ var drawGamePause = function(){
  */
 var StateGameOverGUI = function(){
 	ctx.fillStyle = "Black";
+	ctx.font = "20pt Arial";
+	ctx.fillText("GAME OVER", width / 2 - 100, height / 2 - 40);
 	ctx.font = "10pt Arial";
-	ctx.fillText("GAME OVER", width / 2 - 60, height / 2 - 50);
-	ctx.fillText("Final Score:", width / 2 - 60, height / 2 - 30);
-	ctx.fillText(score, width / 2 - 60, height / 2 - 10);
-	ctx.fillText("SPACE to Restart", width-150, height-15); 	// Add text in the bottom-right corner of the canvas
-	ctx.fillText("ENTER to Main Menu", width-150, height-35); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("SPACE to Restart", width-150, height-marginBottom); 	// Add text in the bottom-right corner of the canvas
+	ctx.fillText("ENTER to Main Menu", width-150, height-30); 	// Add text in the bottom-right corner of the canvas
+	GUI_Lives();
 	GUI_Stats();
 	GUI_Mark();
 }
@@ -754,13 +922,14 @@ var GUI_Lives = function(){
 }
 
 /*
- * GUI - Place Title and Author in top-left
+ * GUI - Place Title and Difficulty in top-left
  */
 var GUI_Mark = function(){
 	ctx.fillStyle = "Black";
-	ctx.font = "10pt Arial";
+	ctx.font = "Bold 10pt Arial";
 	ctx.fillText(textTitle, marginLeft, marginTop); 	// Add text in the top-left
-	ctx.fillText(textAuthor, marginLeft, marginTop + marginText); 	// Add text in the top-left
+	ctx.font = "10pt Arial";
+	ctx.fillText(difficulty.name, marginLeft, marginTop + marginText); 
 }
 
 /*
@@ -769,9 +938,8 @@ var GUI_Mark = function(){
 var GUI_Stats = function(){
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText(difficulty.name, marginLeft, height-50); 	// Add text in the bottom-left corner of the canvas
 	ctx.fillText("Score: " + score, marginLeft, height-30); 	// Add text in the bottom-left corner of the canvas
-	ctx.fillText("Record: " + highscore, marginLeft, height-10); // Add text in the bottom-left corner of the canvas
+	ctx.fillText("Record: " + highscore, marginLeft, height-marginBottom); // Add text in the bottom-left corner of the canvas
 }
 
 /*
@@ -780,7 +948,27 @@ var GUI_Stats = function(){
 var GUI_HighScore = function(){
 	ctx.fillStyle = "Black";
 	ctx.font = "10pt Arial";
-	ctx.fillText("Record: " + highscore, marginLeft, height-10); // Add text in the bottom-left corner of the canvas
+	ctx.fillText("Record: " + highscore, marginLeft, height-marginBottom); // Add text in the bottom-left corner of the canvas
+}
+
+/*
+ * Draws a rounded button
+ */
+function drawRoundButton(ctx, x, y, width, height, arcsize) {
+	//ctx.fillStyle = "Black";
+    ctx.beginPath();
+    ctx.moveTo(x+arcsize, y);
+    ctx.lineTo(x+width-arcsize, y);
+    ctx.arcTo(x+width, y, x+width, y+arcsize, arcsize);
+    ctx.lineTo(x+width,y+height-arcsize);
+    ctx.arcTo(x+width, y+height, x+width-arcsize, y+height, arcsize);
+    ctx.lineTo(x+arcsize, y+height);
+    ctx.arcTo(x, y+height, x, y-arcsize, arcsize);
+    ctx.lineTo(x, y+arcsize);
+    ctx.arcTo(x, y, x+arcsize, y, arcsize);
+    ctx.lineTo(x+arcsize, y);
+    ctx.stroke();
+    ctx.fill();
 }
 
 /*
