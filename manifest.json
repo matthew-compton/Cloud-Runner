@@ -1,0 +1,11 @@
+{
+  "name": "Cloud Runner",
+  "description": "A simple game involving a friendly cloud named Cloudly and his adventures through the sky.",
+  "version": "1.0.0",
+  "app": {
+    "background": {
+      "scripts": ["js/background.js"]
+    }
+  },
+  "icons": { "16": "images/icon-16.png", "128": "images/icon-128.png" }
+}
