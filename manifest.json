@@ -2,7 +2,7 @@
   "name": "Cloud Runner",
   "description": "A simple game involving a friendly cloud named Cloudly and his adventures through the sky.",
   "manifest_version": 2,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "app": {
     "launch": {
       "local_path": "index.html"
