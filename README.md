@@ -7,7 +7,7 @@ It involves a friendly cloud named Cloudly and his adventures through the sky.
 
 Dodge the unfriendly clouds and be sure to stay away from the evil Raincloud!
 
-How to Play
+Setup Instructions
 -------------
 
 - Download the files locally
