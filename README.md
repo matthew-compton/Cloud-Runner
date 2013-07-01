@@ -10,6 +10,12 @@ Dodge the unfriendly clouds and be sure to stay away from the evil Raincloud!
 How to Play
 =================
 
-The game can be played by simply downloading the files locally, via the Chrome Web Store, or my hosted version at:
+> Download the files locally
+
+> Via the Chrome Web Store
+
+https://chrome.google.com/webstore/detail/cloud-runner/okafjkmanfganblclfhffedippdlnnmd
+
+> Web-hosted version
 
 http://giantoctopus.gomobilecomputing.com/giantoctopus/cloudrunner/
