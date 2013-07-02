@@ -952,26 +952,6 @@ var GUI_HighScore = function(){
 }
 
 /*
- * Draws a rounded button
- */
-function drawRoundButton(ctx, x, y, width, height, arcsize) {
-	//ctx.fillStyle = "Black";
-    ctx.beginPath();
-    ctx.moveTo(x+arcsize, y);
-    ctx.lineTo(x+width-arcsize, y);
-    ctx.arcTo(x+width, y, x+width, y+arcsize, arcsize);
-    ctx.lineTo(x+width,y+height-arcsize);
-    ctx.arcTo(x+width, y+height, x+width-arcsize, y+height, arcsize);
-    ctx.lineTo(x+arcsize, y+height);
-    ctx.arcTo(x, y+height, x, y-arcsize, arcsize);
-    ctx.lineTo(x, y+arcsize);
-    ctx.arcTo(x, y, x+arcsize, y, arcsize);
-    ctx.lineTo(x+arcsize, y);
-    ctx.stroke();
-    ctx.fill();
-}
-
-/*
  * Loops infinitely for the game
  */
 var GameLoop = function(){
