@@ -22,8 +22,8 @@
  */
 var textTitle = "Cloud Runner";
 
-var width = window.innerWidth;		// Canvas width
-var height = window.innerHeight;	// Canvas height
+var width = 800;			// Canvas width
+var height = 400;			// Canvas height
 var marginLeft = 10;				// Leave space between text and left of canvas
 var marginTop = 15;					// Leave space between text and top of canvas
 var marginBottom = 10;				// Leave space between text and bottom of canvas
@@ -31,7 +31,7 @@ var marginText = 20;				// Leave space between two text blocks
 var background = "#d0e7f9"; // Background color
 
 var gLoop;								// Game loop
-var c = document.getElementById('c');	// Canvas itself
+var c = document.getElementById('canvas');	// Canvas itself
 var ctx = c.getContext('2d'); 			// Two-dimensional graphic context of canvas
 
 // Set canvas size
@@ -403,7 +403,7 @@ var raincloud = new (function(){
 	}
 	
 	// Movement
-	var movement = 3;	// Move increment or speed
+	var movement = 2;	// Move increment or speed
 	that.moveLeft = function(){
 		if (that.xpos > 0) {
 			that.setPosition(that.xpos - movement, that.ypos);

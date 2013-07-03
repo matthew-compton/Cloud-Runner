@@ -1,17 +1,84 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 	
 	<!-- Header -->
 	<head>
-		<link rel="icon" type="image/ico" href="favicon.ico"/>
-		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<meta charset="utf-8">
 		<title>Cloud Runner</title>
+		<script>
+		if(Browser.isMobile){
+			document.addEvent('touchstart touchend', function(event){
+				event.preventDefault();
+			});
+		}
+		var s = document.getElementById('install');
+		if (window.addEventListener && chrome){
+			s.addEventListener('click',function(e){
+				e.preventDefault();
+				if (chrome.app.isInstalled) {
+
+				}else{
+					chrome.webstore.install();
+				}	
+			});
+		}
+		</script>
+		<link rel="shortcut icon" type="image/ico" href="favicon.ico"/>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<link rel="chrome-webstore-item" href="https://chrome.google.com/webstore/detail/okafjkmanfganblclfhffedippdlnnmd">
 	</head>
+	<!-- End Header -->
 	
 	<!-- Body -->
 	<body>
-		<p>
-		<canvas id='c'>Your browser does not support the canvas element.</canvas>
-		</p>
-		<script src="js/game.js"></script>
+		
+		<!-- Top Bar -->
+		<div id="bar-top">
+			
+			<div id="logo">
+				<img src="images/logos/cloud.png" alt="Cloud Runner">
+			</div>
+			
+			<div id="title">
+			Cloud Runner
+			</div>
+			
+			<div id="store">
+				<a target="_blank" title="Chrome Web Store" href="https://chrome.google.com/webstore/detail/okafjkmanfganblclfhffedippdlnnmd">
+				<img src="images/logos/chrome.png" alt="Chrome Web Store">
+				</a>
+			</div>
+			
+		</div>
+	
+		<!-- Container and Canvas for the game-->
+		<div id="canvas-container">
+			<canvas id="canvas">The chosen browser does not support canvas.</canvas>
+			<script src="js/game.js"></script>
+		</div>
+		
+		<!-- Bottom Bar -->
+		<div id="bar-bottom">
+			
+			<div id="html5">
+				<a target="_blank" title="W3C HTML5" href="http://www.w3.org/html/logo/">
+				<img src="images/logos/html5.png" alt="W3C HTML5">
+				</a>
+			</div>
+			
+			<div id="copyright">
+				Copyright © 2013 » <a target="_blank" title="Email the Author" href="mailto:ambergleam@gmail.com">Ambergleam</a>
+			</div>
+			
+			<div id="github">
+				<a target="_blank" title="Github Repo" href="https://github.com/Ambergleam/Cloud-Runner.git">
+				<img src="images/logos/github.png" alt="Github Repo">
+				</a>
+			</div>
+			
+		</div>
+		
 	</body>
+	<!-- End Body -->
+	
 </html>
