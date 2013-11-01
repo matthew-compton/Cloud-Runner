@@ -15,7 +15,3 @@ Setup Instructions
 - Via the Chrome Web Store
 
     https://chrome.google.com/webstore/detail/cloud-runner/okafjkmanfganblclfhffedippdlnnmd
-
-- Web-hosted version
-
-    http://giantoctopus.gomobilecomputing.com/giantoctopus/cloudrunner/
